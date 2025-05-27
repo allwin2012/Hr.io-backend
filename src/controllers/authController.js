@@ -1,6 +1,9 @@
 const User = require('../models/User'); // Your Mongoose model
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
+const EmailTemplate = require('../models/EmailTemplate');
+const { sendEmail } = require('../services/emailService');
+const { createAndSaveOTP, verifyOTP } = require('../services/otpService');
 
 const JWT_SECRET = process.env.JWT_SECRET || 'your_jwt_secret';
 
@@ -38,4 +41,36 @@ exports.loginUser = async (req, res) => {
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
+};
+
+//forgot password
+exports.forgotPassword = async (req, res) => {
+  const { email } = req.body;
+  const user = await User.findOne({ email });
+  if (!user) return res.status(404).json({ message: 'User not found' });
+
+  const otp = await createAndSaveOTP(email);
+  const template = await EmailTemplate.findOne({ name: 'forgot_password' });
+  if (!template) return res.status(500).json({ message: 'Email template not found' });
+
+  const subject = template.subject;
+  const body = template.body.replace('{{name}}', user.name).replace('{{OTP}}', otp);
+
+  await sendEmail(email, subject, body);
+  res.json({ message: 'OTP sent to email' });
+};
+
+exports.verifyOTP = async (req, res) => {
+  const { email, otp } = req.body;
+  const isValid = await verifyOTP(email, otp);
+  if (!isValid) return res.status(400).json({ message: 'Invalid or expired OTP' });
+
+  res.json({ message: 'OTP verified' });
+};
+
+exports.resetPassword = async (req, res) => {
+  const { email, newPassword } = req.body;
+  const hashedPassword = await bcrypt.hash(newPassword, 10);
+  await User.findOneAndUpdate({ email }, { password: hashedPassword });
+  res.json({ message: 'Password reset successful' });
 };
