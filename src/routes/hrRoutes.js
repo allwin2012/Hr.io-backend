@@ -10,7 +10,9 @@ router.use(requireAuth, requireHR);
 
 // Get all employees
 router.get('/employees', async (req, res) => {
-  const users = await User.find({ role: { $ne: 'SuperAdmin' } });
+  const users = await User.find({ role: { $ne: 'SuperAdmin' } })
+    .populate('reportsTo', 'name'); // ✅ populate name from reportsTo
+
   res.json(users);
 });
 

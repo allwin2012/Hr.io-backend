@@ -29,7 +29,7 @@ const userSchema = new mongoose.Schema({
   status: { type: String, default: 'Active' },
   bio: { type: String, default: '' },
   avatar: { type: String, default: '' },
-  
+
   reportsTo: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',
@@ -41,6 +41,13 @@ const userSchema = new mongoose.Schema({
     ref: 'User',
     default: null,
   },
+  leave: {
+    sick: { type: Number, default: 10 },
+    casual: { type: Number, default: 10 },
+    earned: { type: Number, default: 5 },
+    lop: { type: Number, default: 0 }
+  },
+
   reportsToId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null },
   otp: {
     type: String,
