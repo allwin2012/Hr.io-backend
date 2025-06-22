@@ -12,25 +12,14 @@ const app = express();
 connectDB();
 
 // ✅ Middleware — CORRECT ORDER
-const allowedOrigins = [
-  'http://localhost:5173',         // Dev
-  'https://hrio.netlify.app'       // Deployed frontend
-];
+const cors = require('cors');
 
 app.use(cors({
-  origin: (origin, callback) => {
-    // Allow requests with no origin (like Postman) or matching origin
-    if (!origin || allowedOrigins.includes(origin)) {
-      callback(null, true);
-    } else {
-      callback(new Error('Not allowed by CORS'));
-    }
-  },
+  origin: ['https://hrio.netlify.app', 'http://localhost:5173'],
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization'],
   credentials: true,
 }));
-
 
 
 app.use(express.json()); // ✅ Needed to parse JSON bodies
