@@ -12,8 +12,6 @@ const app = express();
 connectDB();
 
 // ✅ Middleware — CORRECT ORDER
-const cors = require('cors');
-
 app.use(cors({
   origin: ['https://hrio.netlify.app', 'http://localhost:5173'],
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
