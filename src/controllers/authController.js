@@ -5,6 +5,7 @@ const EmailTemplate = require('../models/EmailTemplate');
 const { sendEmail } = require('../services/emailService');
 const { createAndSaveOTP, verifyOTP } = require('../services/otpService');
 
+
 const JWT_SECRET = process.env.JWT_SECRET || 'your_jwt_secret';
 
 exports.registerUser = async (req, res) => {
@@ -54,10 +55,12 @@ exports.loginUser = async (req, res) => {
     res.status(200).json({
       token,
       user: {
+        id : user._id,
         name: user.name,
         email: user.email,
         role: user.role,
         department: user.department
+        
       }
     });
   } catch (err) {
