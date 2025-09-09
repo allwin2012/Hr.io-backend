@@ -231,15 +231,70 @@ router.put('/:id', requireAuth, async (req, res) => {
 });
 
 // ----------- DELETE Task -----------
+// router.delete('/:id', requireAuth, async (req, res) => {
+//   try {
+//     const task = await Task.findById(req.params.id);
+//     if (!task) {
+//       return res.status(404).json({ message: 'Task not found' });
+//     }
+
+//     // Check permissions (only creator or admin can delete)
+//     const isCreator = task.createdBy.toString() === req.user._id.toString();
+//     const isAdmin = req.user.role === 'Admin' || req.user.role === 'SuperAdmin';
+
+//     if (!isCreator && !isAdmin) {
+//       return res.status(403).json({ message: 'Not authorized to delete this task' });
+//     }
+
+//     await task.deleteOne();
+//     res.json({ message: 'Task deleted successfully' });
+//   } catch (err) {
+//     res.status(500).json({ 
+//       message: 'Task deletion failed', 
+//       error: err.message 
+//     });
+//   }
+// });
+
 router.delete('/:id', requireAuth, async (req, res) => {
   try {
+    // ensure auth middleware attached a user
+    if (!req.user || !req.user._id) {
+      return res.status(401).json({ message: 'Unauthorized: user not found on request. Check auth middleware.' });
+    }
+
     const task = await Task.findById(req.params.id);
     if (!task) {
       return res.status(404).json({ message: 'Task not found' });
     }
 
-    // Check permissions (only creator or admin can delete)
-    const isCreator = task.createdBy.toString() === req.user._id.toString();
+    // derive creator id robustly:
+    // createdBy might be:
+    // - an ObjectId (e.g. ObjectId("..."))
+    // - a populated object ({ _id: "...", name: "..." })
+    // - absent (null/undefined)
+    let taskCreatorId = null;
+    if (task.createdBy) {
+      if (typeof task.createdBy === 'string') {
+        taskCreatorId = task.createdBy;
+      } else if (task.createdBy._id) {
+        taskCreatorId = task.createdBy._id.toString();
+      } else if (typeof task.createdBy.toString === 'function') {
+        taskCreatorId = task.createdBy.toString();
+      }
+    }
+
+    const requesterId = req.user._id.toString();
+
+    // debug (remove in production)
+    console.log('Delete attempt:', {
+      taskId: task._id?.toString(),
+      taskCreatorId,
+      requesterId,
+      requesterRole: req.user.role
+    });
+
+    const isCreator = taskCreatorId && requesterId && taskCreatorId === requesterId;
     const isAdmin = req.user.role === 'Admin' || req.user.role === 'SuperAdmin';
 
     if (!isCreator && !isAdmin) {
@@ -247,13 +302,15 @@ router.delete('/:id', requireAuth, async (req, res) => {
     }
 
     await task.deleteOne();
-    res.json({ message: 'Task deleted successfully' });
+    return res.json({ message: 'Task deleted successfully' });
   } catch (err) {
-    res.status(500).json({ 
-      message: 'Task deletion failed', 
-      error: err.message 
+    console.error('Task deletion error:', err);
+    return res.status(500).json({
+      message: 'Task deletion failed',
+      error: err.message
     });
   }
 });
+
 
 module.exports = router;
